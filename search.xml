@@ -1,9 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title></title>
-    <url>/uncategorized/leecode-1024/</url>
-    <content><![CDATA[]]></content>
+    <title>并发控制</title>
+    <url>/uncategorized/concurrent-control/</url>
+    <content><![CDATA[<p>go语言在高并发场景下会用到几种关键性技术：处理协程优雅退出的context，检查并发数据争用的race工具，以及传统的同步原语——锁。</p>
+<h2 id="context"><a href="#context" class="headerlink" title="context"></a>context</h2><p>在go程序中可能同时存在许多协程，这些协程被动态的创建和销毁。例如在http服务器中无时无刻不在发生新连接的建立，每个连接都可能新建一个协程。虽然请求完成后协程会随之销毁，考虑到连接可能超时或终止，context的引入无疑提供了一种优雅控制协程退出的手段。</p>
+<p>context一般作为函数的第一个参数，在数据库和网络中被频繁使用。其内部通过通道关闭的机制实现继承链上协程的退出通信。其在很大程度上利用了通道在close时会通知所有监听它的协程这一特性来实现。每个派生出的子协程都会创建一个新的退出通道，组织好context之间的关系即可实现继承链上退出的传递。具体原理是通过propagateCancel函数将子context加入父协程的children hashmap中，并开启自身的timer，timer到期会调用cancel方法关闭自身通道和所有子context的通道。</p>
+<p>此外，context.Context接口中还提供了一个Value方法，可以提供在一个链路上的轻量级数据存储，且不会破坏原有的功能性接口。常被用于安全凭证，分布式traceid，退出信号、操作优先级与到期时间等场景。该值的作用域在结束时终结。</p>
+<h2 id="race"><a href="#race" class="headerlink" title="race"></a>race</h2><p>race工具常用于排查高并发场景下的数据争用。数据争用在go语言中指两个协程同时访问相同的内存空间，并且至少有一个在写操作。这种情况下会导致结果不明确。race可以检测数据争用并打印error report。其底层原理是通过CGO调用了ThreadSanitizer。</p>
+<p><strong>矢量时钟：</strong>用来观察事件之间的happen-before顺序。可以检测和确定分布式系统中的事件因果关系。n个协程对应n个逻辑时钟，矢量时钟是其组成的数组，每个特定事件都会增加该协程 自己的逻辑时钟。</p>
+<h2 id="Mutex"><a href="#Mutex" class="headerlink" title="Mutex"></a>Mutex</h2><p>传统的同步原语包括原子锁，互斥锁以及读写锁。</p>
+<p>go语言的互斥锁算是一种混合锁，结合了原子操作、自旋、信号量、全局哈希表、等待队列、操作系统级别锁等多种技术，实现相对复杂。但是go语言的锁相对于操作系统级别的锁更快，因为在大部分情况下锁的争用停留在用户态。</p>
+<p>其通过sync.Mutex构建互斥锁。sync.Mutex的结构比较简单，包含了表示当前锁状态的state以及信号量sema。state通过位图的形式存储了当前锁的状态，其中包含锁是否为锁定状态、正在等待被锁唤醒的协程数量、两个和饥饿模式有关的标志。</p>
+<p><strong>饥饿模式：</strong>unlock会唤醒最先申请加速的协程。</p>
+<p><strong>互斥锁的加锁三个阶段：</strong></p>
+<p>阶段1：原子操作快速抢占锁，atomic.CompareAndSwapInt32，失败则调用lockSlow自旋抢占锁一段时间，锁只有在正常模式下才能进入自旋状态，rumtime_canSpin函数</p>
+<p>阶段2：信号量sema同步，加锁减1，解锁加1，大于0加锁协程可以直接退出，等于0则加锁协程需要陷入休眠</p>
+<p>阶段3：锁的信息存储在全局semtable哈希表中，互斥锁加入等待队列，hash冲突则维护一个双向链表，其还被构造成了特殊的treap树（引入随机数的二叉搜索树），以便快速查找是否存在已经存在过的锁，如果已经存在，将当前协程添加到等待队列的尾部，如果不存在则加入treap树，维护公平性</p>
+<p>互斥锁最终被放置到全局的等待队列中等待唤醒，FIFO</p>
+<p><strong>互斥锁的释放：</strong></p>
+<p>1: 普通锁定，没有进入饥饿和唤醒状态，修改mutexLocked状态后立即退出，否则调用unlockSlow</p>
+<p>2.是否重复释放</p>
+<p>3.处于饥饿状态则进入信号量同步阶段，到semtable中寻找当前锁的等待队列，FIFO唤醒</p>
+<p>4.未处于饥饿状态且mutexWoken已经设置，表明有其他申请锁的协程准备从正常状态下退出</p>
+<p><strong>读写锁：</strong>适用于读多写少的场景，读写互斥，读多写单</p>
+<p><strong>读写锁原理：</strong>复用了互斥锁和信号量两种机制。</p>
+]]></content>
   </entry>
   <entry>
     <title>about</title>
