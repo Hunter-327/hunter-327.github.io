@@ -7,6 +7,8 @@
 <h2 id="context"><a href="#context" class="headerlink" title="context"></a>context</h2><p>在go程序中可能同时存在许多协程，这些协程被动态的创建和销毁。例如在http服务器中无时无刻不在发生新连接的建立，每个连接都可能新建一个协程。虽然请求完成后协程会随之销毁，考虑到连接可能超时或终止，context的引入无疑提供了一种优雅控制协程退出的手段。</p>
 <p>context一般作为函数的第一个参数，在数据库和网络中被频繁使用。其内部通过通道关闭的机制实现继承链上协程的退出通信。其在很大程度上利用了通道在close时会通知所有监听它的协程这一特性来实现。每个派生出的子协程都会创建一个新的退出通道，组织好context之间的关系即可实现继承链上退出的传递。具体原理是通过propagateCancel函数将子context加入父协程的children hashmap中，并开启自身的timer，timer到期会调用cancel方法关闭自身通道和所有子context的通道。</p>
 <p>此外，context.Context接口中还提供了一个Value方法，可以提供在一个链路上的轻量级数据存储，且不会破坏原有的功能性接口。常被用于安全凭证，分布式traceid，退出信号、操作优先级与到期时间等场景。该值的作用域在结束时终结。</p>
+<span id="more"></span>
+
 <h2 id="race"><a href="#race" class="headerlink" title="race"></a>race</h2><p>race工具常用于排查高并发场景下的数据争用。数据争用在go语言中指两个协程同时访问相同的内存空间，并且至少有一个在写操作。这种情况下会导致结果不明确。race可以检测数据争用并打印error report。其底层原理是通过CGO调用了ThreadSanitizer。</p>
 <p><strong>矢量时钟：</strong>用来观察事件之间的happen-before顺序。可以检测和确定分布式系统中的事件因果关系。n个协程对应n个逻辑时钟，矢量时钟是其组成的数组，每个特定事件都会增加该协程 自己的逻辑时钟。</p>
 <h2 id="Mutex"><a href="#Mutex" class="headerlink" title="Mutex"></a>Mutex</h2><p>传统的同步原语包括原子锁，互斥锁以及读写锁。</p>
