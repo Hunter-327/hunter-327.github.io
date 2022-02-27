@@ -54,7 +54,7 @@
 <p>15 个<strong>内置函数</strong>，具有全局可见性（make, new, cap, append, copy, delete, panic, recover, close, complex, real, image, print, println）</p>
 <p>4 个常量值标识符（true, false, iota, nil）</p>
 <p>1 个空白标识符（_）</p>
-<p>B**. 用户自定义标识符**</p>
+<p><strong>B. 用户自定义标识符</strong></p>
 <p>包名、变量名、常量名、函数名、自定义类型名、方法名</p>
 <h3 id="操作符和分隔符"><a href="#操作符和分隔符" class="headerlink" title="操作符和分隔符"></a>操作符和分隔符</h3><p>4 个纯粹分隔符：空格、制表符、回车、换行</p>
 <p>47 个<strong>操作符</strong>：分为：</p>
